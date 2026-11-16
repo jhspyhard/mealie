@@ -74,7 +74,7 @@
               flat
               width="100%"
               autofocus
-              autocomplete="username"
+              :autocomplete="$appInfo.enablePasskeys ? 'username webauthn' : 'username'"
               name="username"
               :label="$t('user.email-or-username')"
               type="text"
@@ -103,7 +103,7 @@
               <div class="max-button">
                 <v-btn
                   :loading="loggingIn"
-                  :disabled="oidcLoggingIn"
+                  :disabled="oidcLoggingIn || passkeyLoggingIn"
                   variant="elevated"
                   color="primary"
                   type="submit"
@@ -113,6 +113,24 @@
                   block
                 >
                   {{ $t("user.login") }}
+                </v-btn>
+              </div>
+            </v-card-actions>
+            <v-card-actions v-if="showPasskeyButton" class="justify-center pt-0">
+              <div class="max-button">
+                <v-btn
+                  :loading="passkeyLoggingIn"
+                  :disabled="loggingIn || oidcLoggingIn"
+                  variant="outlined"
+                  color="primary"
+                  size="large"
+                  rounded
+                  class="rounded-xl"
+                  block
+                  :prepend-icon="$globals.icons.passkey"
+                  @click="passkeyAuthenticate"
+                >
+                  {{ $t("user.sign-in-with-a-passkey") }}
                 </v-btn>
               </div>
             </v-card-actions>
@@ -225,6 +243,7 @@ import { usePasswordField } from "~/composables/use-passwords";
 import { alert } from "~/composables/use-toast";
 import { useAsyncKey } from "~/composables/use-utils";
 import { isSafeRedirectTarget } from "~/lib/validators/redirect";
+import { conditionalMediationAvailable, isPasskeyCancellation, passkeysSupported } from "~/lib/webauthn";
 import type { AppStartupInfo } from "~/lib/api/types/admin";
 import { useUserActivityPreferences } from "~/composables/use-users/preferences";
 
@@ -339,6 +358,106 @@ onBeforeMount(async () => {
   }
   reverseProxyLoggingIn.value = false;
 });
+
+// ================================================================
+// Passkeys
+
+const passkeyLoggingIn = ref(false);
+const showPasskeyButton = ref(false);
+/** The username field offers passkeys in its autofill list */
+const passkeyAutofill = ref(false);
+let autofillRequest: AbortController | null = null;
+
+/** Below this, a conditional request that ends on its own was refused outright rather than timing out */
+const AUTOFILL_MIN_LIFETIME_MS = 1000;
+
+onMounted(async () => {
+  if (!$appInfo.enablePasskeys || !passkeysSupported()) {
+    return;
+  }
+  showPasskeyButton.value = true;
+
+  // Autofill needs the username field, which is hidden when password login is off
+  if ($appInfo.allowPasswordLogin && await conditionalMediationAvailable()) {
+    passkeyAutofill.value = true;
+    startPasskeyAutofill();
+  }
+});
+
+onBeforeUnmount(() => stopPasskeyAutofill());
+
+function stopPasskeyAutofill() {
+  autofillRequest?.abort();
+  autofillRequest = null;
+}
+
+/**
+ * Leaves a passkey request pending behind the username field, so picking a passkey from its autofill list signs
+ * straight in. It's abandoned when the page is left or the passkey button opens the browser's own prompt.
+ */
+async function startPasskeyAutofill() {
+  if (!passkeyAutofill.value || loggedIn.value) {
+    return;
+  }
+
+  stopPasskeyAutofill();
+  const request = new AbortController();
+  autofillRequest = request;
+  const startedAt = Date.now();
+
+  try {
+    await auth.passkeySignIn({ remember: form.remember, mediation: "conditional", signal: request.signal });
+  }
+  catch (error) {
+    if (request.signal.aborted) {
+      return;
+    }
+
+    if (isPasskeyCancellation(error)) {
+      // The request timed out with the page still open, so start another. One refused straight away would just
+      // be refused again, so give up on autofill instead of spinning; the button still works.
+      if (Date.now() - startedAt < AUTOFILL_MIN_LIFETIME_MS) {
+        passkeyAutofill.value = false;
+        return;
+      }
+    }
+    else {
+      alertOnPasskeyError(error);
+    }
+
+    if (autofillRequest === request) {
+      startPasskeyAutofill();
+    }
+  }
+}
+
+async function passkeyAuthenticate() {
+  stopPasskeyAutofill();
+  passkeyLoggingIn.value = true;
+
+  try {
+    await auth.passkeySignIn({ remember: form.remember });
+  }
+  catch (error) {
+    if (!isPasskeyCancellation(error)) {
+      alertOnPasskeyError(error);
+    }
+  }
+  passkeyLoggingIn.value = false;
+
+  startPasskeyAutofill();
+}
+
+function alertOnPasskeyError(error: any) {
+  console.log(error);
+  if (error?.response?.status === 401) {
+    // Usually a passkey the browser still holds after it was removed from the account
+    alert.error(i18n.t("user.passkey-not-accepted"));
+  }
+  else {
+    alertOnError(error);
+  }
+}
 
 function isCallback() {
   const params = new URLSearchParams(window.location.search);

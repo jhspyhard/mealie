@@ -315,6 +315,9 @@ const appConfig = ref<CheckApp>({
   oidcDisabled: false,
   reverseProxyAuthReady: false,
   reverseProxyAuthDisabled: false,
+  passkeysReady: false,
+  passkeysDisabled: true,
+  passkeysStatus: null,
 });
 const adminStats = ref<AppStatistics>({
   totalRecipes: 0,
@@ -439,6 +442,22 @@ function authProviderCheck(provider: AuthProvider): SimpleCheck {
   };
 }
 
+function passkeysCheck(): SimpleCheck {
+  const check = authProviderCheck({
+    id: "passkeys-ready",
+    name: i18n.t("profile.passkeys.passkeys"),
+    envVar: "PASSKEYS_ENABLED",
+    ready: appConfig.value.passkeysReady,
+    disabled: appConfig.value.passkeysDisabled,
+  });
+
+  // Turned on but not usable: the server knows which BASE_URL rule is failing, which beats the generic text
+  if (!appConfig.value.passkeysDisabled && !appConfig.value.passkeysReady && appConfig.value.passkeysStatus) {
+    check.errorText = appConfig.value.passkeysStatus;
+  }
+  return check;
+}
+
 const simpleChecks = computed<SimpleCheck[]>(() => {
   const data: SimpleCheck[] = [
     {
@@ -489,6 +508,7 @@ const simpleChecks = computed<SimpleCheck[]>(() => {
       ready: appConfig.value.reverseProxyAuthReady,
       disabled: appConfig.value.reverseProxyAuthDisabled,
     }),
+    passkeysCheck(),
   ];
   return data;
 });

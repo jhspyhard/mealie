@@ -51,6 +51,10 @@ auth_oauth_native_config = "/api/auth/oauth/native/config"
 """`/api/auth/oauth/native/config`"""
 auth_oauth_native_token = "/api/auth/oauth/native/token"
 """`/api/auth/oauth/native/token`"""
+auth_passkey = "/api/auth/passkey"
+"""`/api/auth/passkey`"""
+auth_passkey_options = "/api/auth/passkey/options"
+"""`/api/auth/passkey/options`"""
 auth_refresh = "/api/auth/refresh"
 """`/api/auth/refresh`"""
 auth_reverse_proxy = "/api/auth/reverse-proxy"
@@ -219,6 +223,10 @@ users_self = "/api/users/self"
 """`/api/users/self`"""
 users_self_favorites = "/api/users/self/favorites"
 """`/api/users/self/favorites`"""
+users_self_passkeys = "/api/users/self/passkeys"
+"""`/api/users/self/passkeys`"""
+users_self_passkeys_registration_options = "/api/users/self/passkeys/registration-options"
+"""`/api/users/self/passkeys/registration-options`"""
 users_self_ratings = "/api/users/self/ratings"
 """`/api/users/self/ratings`"""
 utils_download = "/api/utils/download"
@@ -648,6 +656,11 @@ def users_id_ratings_slug(id, slug):
 def users_item_id(item_id):
     """`/api/users/{item_id}`"""
     return f"{prefix}/users/{item_id}"
+
+
+def users_self_passkeys_passkey_id(passkey_id):
+    """`/api/users/self/passkeys/{passkey_id}`"""
+    return f"{prefix}/users/self/passkeys/{passkey_id}"
 
 
 def users_self_ratings_recipe_id(recipe_id):

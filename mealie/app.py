@@ -90,6 +90,8 @@ async def lifespan_fn(_: FastAPI) -> AsyncGenerator[None]:
     logger.info(settings.LDAP_FEATURE)
     logger.info("--------==OIDC==--------")
     logger.info(settings.OIDC_FEATURE)
+    logger.info("------==PASSKEYS==------")
+    logger.info(settings.PASSKEYS_FEATURE)
     logger.info("------------------------")
 
     if settings.branding.logo_path and not settings.branding.logo_file:

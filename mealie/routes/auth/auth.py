@@ -16,14 +16,18 @@ from mealie.core import root_logger, security
 from mealie.core.config import get_app_settings
 from mealie.core.dependencies import get_auth_token, get_current_user
 from mealie.core.exceptions import MissingClaimException, UserLockedOut
+from mealie.core.security.providers.passkey_provider import PasskeyProvider
 from mealie.core.security.providers.reverse_proxy_provider import ReverseProxyProvider
 from mealie.core.security.security import get_auth_provider
 from mealie.db.db_setup import generate_session
 from mealie.lang import get_locale_provider
+from mealie.repos.all_repositories import get_repositories
 from mealie.routes._base.permissions import not_found
 from mealie.routes._base.routers import UserAPIRouter
 from mealie.schema.user import PrivateUser
 from mealie.schema.user.auth import CredentialsRequestForm, NativeOIDCTokenRequest, OIDCNativeConfig
+from mealie.schema.user.passkeys import PasskeyLoginRequest, PasskeyOptionsOut
+from mealie.services.user_services.passkey_service import PasskeyService
 
 from .auth_cache import AuthCache
 
@@ -172,6 +176,18 @@ def set_session_cookie(response: Response, request: Request, token: str, expires
     )
 
 
+def client_ip(request: Request) -> str:
+    """The client's address for logging failed sign-ins. Taken from headers the client controls, so only for logs."""
+    if "x-forwarded-for" in request.headers:
+        ip = request.headers["x-forwarded-for"]
+        if "," in ip:  # if there are multiple IPs, the first one is canonically the true client
+            ip = str(ip.split(",")[0])
+        return ip
+
+    # request.client should never be null, except sometimes during testing
+    return request.client.host if request.client else "unknown"
+
+
 class MealieAuthToken(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -194,13 +210,7 @@ def get_token(
     data: CredentialsRequestForm = Depends(),
     session: Session = Depends(generate_session),
 ):
-    if "x-forwarded-for" in request.headers:
-        ip = request.headers["x-forwarded-for"]
-        if "," in ip:  # if there are multiple IPs, the first one is canonically the true client
-            ip = str(ip.split(",")[0])
-    else:
-        # request.client should never be null, except sometimes during testing
-        ip = request.client.host if request.client else "unknown"
+    ip = client_ip(request)
 
     try:
         auth_provider = get_auth_provider(session, data)
@@ -214,6 +224,44 @@ def get_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
+
+    access_token, duration = auth
+    set_session_cookie(response, request, access_token, duration, data.remember_me)
+    return MealieAuthToken.respond(access_token, duration)
+
+
+@public_router.post("/passkey/options", response_model=PasskeyOptionsOut)
+def passkey_login_options(session: Session = Depends(generate_session)):
+    """Starts a passkey sign-in. Hand `options` to `navigator.credentials.get()`.
+
+    No username is needed: the browser offers whichever of the user's passkeys it holds for this site.
+    """
+    if not get_app_settings().PASSKEYS_READY:
+        raise not_found()
+
+    return PasskeyService(get_repositories(session, group_id=None, household_id=None)).authentication_options()
+
+
+@public_router.post("/passkey")
+def passkey_login(
+    request: Request,
+    response: Response,
+    data: PasskeyLoginRequest,
+    session: Session = Depends(generate_session),
+):
+    """Finishes a passkey sign-in with the browser's response, returning a session token like `/token` does."""
+    if not get_app_settings().PASSKEYS_READY:
+        raise not_found()
+
+    try:
+        auth = PasskeyProvider(session, data).authenticate()
+    except UserLockedOut as e:
+        logger.error(f"User is locked out from {client_ip(request)}")
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail="User is locked out") from e
+
+    if not auth:
+        logger.error(f"Passkey sign-in failed from {client_ip(request)}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     access_token, duration = auth
     set_session_cookie(response, request, access_token, duration, data.remember_me)

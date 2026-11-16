@@ -17,6 +17,7 @@ export interface AdminAboutInfo {
   oidcRedirect: boolean;
   oidcProviderName: string;
   enableReverseProxyAuth: boolean;
+  enablePasskeys: boolean;
   tokenTime: number;
   allowedIframeHosts?: string[];
   brandingName?: string;
@@ -52,6 +53,7 @@ export interface AppInfo {
   oidcRedirect: boolean;
   oidcProviderName: string;
   enableReverseProxyAuth: boolean;
+  enablePasskeys: boolean;
   tokenTime: number;
   allowedIframeHosts?: string[];
   brandingName?: string;
@@ -93,6 +95,9 @@ export interface CheckAppConfig {
   oidcDisabled: boolean;
   reverseProxyAuthReady: boolean;
   reverseProxyAuthDisabled: boolean;
+  passkeysReady: boolean;
+  passkeysDisabled: boolean;
+  passkeysStatus?: string | null;
   baseUrlSet: boolean;
   isUpToDate: boolean;
 }

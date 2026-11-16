@@ -79,7 +79,9 @@
         "user-updated": "User updated",
         "password-updated": "Password updated",
         "invalid-current-password": "Invalid current password",
-        "ldap-update-password-unavailable": "Unable to update password, user is controlled by LDAP"
+        "ldap-update-password-unavailable": "Unable to update password, user is controlled by LDAP",
+        "passkeys-unavailable-for-auth-method": "Passkeys are only available for accounts that sign in with a Mealie password",
+        "passkey-registration-failed": "The passkey could not be added. Please try again."
     },
     "group": {
         "report-deleted": "Report deleted."

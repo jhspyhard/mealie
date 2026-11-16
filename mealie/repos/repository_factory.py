@@ -36,6 +36,7 @@ from mealie.db.models.recipe.shared import RecipeShareTokenModel
 from mealie.db.models.recipe.tag import Tag, recipes_to_tags
 from mealie.db.models.recipe.tool import Tool, recipes_to_tools
 from mealie.db.models.users import LongLiveToken, User
+from mealie.db.models.users.passkeys import PasskeyChallenge, UserPasskey
 from mealie.db.models.users.password_reset import PasswordResetModel
 from mealie.db.models.users.user_to_recipe import UserToRecipe
 from mealie.repos.repository_ai_provider import GroupRepositoryAIPromptOverride, GroupRepositoryAIProvider
@@ -71,6 +72,7 @@ from mealie.schema.recipe.recipe_share_token import RecipeShareTokenOut
 from mealie.schema.recipe.recipe_timeline_events import RecipeTimelineEventOut
 from mealie.schema.reports.reports import ReportEntryOut, ReportOut
 from mealie.schema.user import GroupOut, LongLiveTokenInDB, PrivateUser
+from mealie.schema.user.passkeys import PasskeyChallengeOut, UserPasskeyInDB
 from mealie.schema.user.user import UserRatingOut
 from mealie.schema.user.user_passwords import PrivatePasswordResetToken
 
@@ -78,6 +80,7 @@ from ._utils import NOT_SET, NotSet
 from .repository_generic import GroupRepositoryGeneric, HouseholdRepositoryGeneric
 from .repository_group import RepositoryGroup
 from .repository_meals import RepositoryMeals
+from .repository_passkeys import RepositoryPasskeyChallenges
 from .repository_recipes import RepositoryRecipes
 from .repository_shopping_list import RepositoryShoppingList
 from .repository_users import RepositoryUserRatings, RepositoryUsers
@@ -344,6 +347,14 @@ class AllRepositories:
     @cached_property
     def api_tokens(self) -> GroupRepositoryGeneric[LongLiveTokenInDB, LongLiveToken]:
         return GroupRepositoryGeneric(self.session, PK_ID, LongLiveToken, LongLiveTokenInDB, group_id=self.group_id)
+
+    @cached_property
+    def user_passkeys(self) -> GroupRepositoryGeneric[UserPasskeyInDB, UserPasskey]:
+        return GroupRepositoryGeneric(self.session, PK_ID, UserPasskey, UserPasskeyInDB, group_id=self.group_id)
+
+    @cached_property
+    def passkey_challenges(self) -> RepositoryPasskeyChallenges:
+        return RepositoryPasskeyChallenges(self.session, PK_ID, PasskeyChallenge, PasskeyChallengeOut)
 
     @cached_property
     def tokens_pw_reset(self) -> GroupRepositoryGeneric[PrivatePasswordResetToken, PasswordResetModel]:

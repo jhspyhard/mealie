@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import os
 import secrets
@@ -526,6 +527,70 @@ class AppSettings(AppLoggingSettings):
     def REVERSE_PROXY_AUTH_READY(self) -> bool:
         """Validates reverse proxy auth settings are all set"""
         return self.REVERSE_PROXY_AUTH_FEATURE.enabled
+
+    # ===============================================
+    # Passkey (WebAuthn) Configuration
+
+    PASSKEYS_ENABLED: bool = False
+    """Let users with a Mealie password add passkeys and sign in with them. Browsers only offer passkeys on a
+    secure origin, so this also needs BASE_URL set to an https:// address with a domain name (http://localhost
+    is allowed for development). Off by default because a stock install serves plain HTTP."""
+
+    @property
+    def PASSKEYS_RP_ID(self) -> str:
+        """The relying party ID passkeys are bound to: BASE_URL's hostname. Passkeys made for one RP ID never
+        work for another, so changing BASE_URL's hostname strands every registered passkey."""
+        return (urlparse(self.BASE_URL).hostname or "").lower()
+
+    @property
+    def PASSKEYS_ORIGIN(self) -> str:
+        """BASE_URL reduced to the origin a browser reports during a WebAuthn ceremony: scheme, lowercase host,
+        and the port only when it isn't the scheme's default."""
+        parsed = urlparse(self.BASE_URL)
+        scheme = parsed.scheme.lower()
+        host = self.PASSKEYS_RP_ID
+        if ":" in host:
+            host = f"[{host}]"
+
+        try:
+            port = parsed.port
+        except ValueError:
+            port = None
+
+        default_port = {"http": 80, "https": 443}.get(scheme)
+        if port is None or port == default_port:
+            return f"{scheme}://{host}"
+        return f"{scheme}://{host}:{port}"
+
+    @property
+    def PASSKEYS_FEATURE(self) -> FeatureDetails:
+        if not self.PASSKEYS_ENABLED:
+            return FeatureDetails(enabled=False, description="PASSKEYS_ENABLED is false")
+
+        scheme = urlparse(self.BASE_URL).scheme.lower()
+        host = self.PASSKEYS_RP_ID
+        is_localhost = host == "localhost" or host.endswith(".localhost")
+
+        description: str | None = None
+        if self.is_default_base_url:
+            description = "BASE_URL must be set to the address users open Mealie at"
+        elif not host:
+            description = "BASE_URL must be a full URL, such as https://mealie.example.com"
+        elif scheme != "https" and not (scheme == "http" and is_localhost):
+            description = "BASE_URL must use https://, because browsers only allow passkeys on secure sites"
+        else:
+            try:
+                ipaddress.ip_address(host)
+                description = "BASE_URL must use a domain name; passkeys can't be bound to an IP address"
+            except ValueError:
+                pass
+
+        return FeatureDetails(enabled=description is None, description=description)
+
+    @property
+    def PASSKEYS_READY(self) -> bool:
+        """Passkeys are enabled and BASE_URL is an origin browsers will allow them on"""
+        return self.PASSKEYS_FEATURE.enabled
 
     # ===============================================
     # Scraper Configuration

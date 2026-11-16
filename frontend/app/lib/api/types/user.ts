@@ -173,6 +173,35 @@ export interface OIDCNativeConfig {
   client_id: string;
   scope: string;
 }
+export interface PasskeyChallengeOut {
+  challenge: string;
+  purpose: string;
+  expiresAt: string;
+  userId?: string | null;
+  id: string;
+}
+export interface PasskeyChallengeSave {
+  challenge: string;
+  purpose: string;
+  expiresAt: string;
+  userId?: string | null;
+}
+export interface PasskeyLoginRequest {
+  challengeId: string;
+  credential: {
+    [k: string]: unknown;
+  };
+  rememberMe?: boolean;
+}
+export interface PasskeyOptionsOut {
+  challengeId: string;
+  options: {
+    [k: string]: unknown;
+  };
+}
+export interface PasskeyRegistrationOptionsRequest {
+  currentPassword: string;
+}
 export interface PasswordResetToken {
   token: string;
 }
@@ -259,6 +288,45 @@ export interface UserOut {
   householdSlug: string;
   tokens: LongLiveTokenOut[] | null;
   cacheKey: string;
+}
+export interface UserPasskeyCreate {
+  challengeId: string;
+  name: string;
+  credential: {
+    [k: string]: unknown;
+  };
+}
+export interface UserPasskeyInDB {
+  id: string;
+  name: string;
+  backedUp: boolean;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+  userId: string;
+  credentialId: string;
+  publicKey: string;
+  signCount: number;
+  transports: string | null;
+  aaguid: string | null;
+  backupEligible: boolean;
+}
+export interface UserPasskeyOut {
+  id: string;
+  name: string;
+  backedUp: boolean;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+}
+export interface UserPasskeySave {
+  userId: string;
+  name: string;
+  credentialId: string;
+  publicKey: string;
+  signCount?: number;
+  transports?: string | null;
+  aaguid?: string | null;
+  backupEligible?: boolean;
+  backedUp?: boolean;
 }
 export interface UserRatingOut {
   recipeId: string;

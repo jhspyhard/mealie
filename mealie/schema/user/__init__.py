@@ -8,6 +8,17 @@ from .auth import (
     TokenData,
     UnlockResults,
 )
+from .passkeys import (
+    PasskeyChallengeOut,
+    PasskeyChallengeSave,
+    PasskeyLoginRequest,
+    PasskeyOptionsOut,
+    PasskeyRegistrationOptionsRequest,
+    UserPasskeyCreate,
+    UserPasskeyInDB,
+    UserPasskeyOut,
+    UserPasskeySave,
+)
 from .registration import UserRegistrationCreate
 from .user import (
     ChangePassword,
@@ -53,6 +64,15 @@ __all__ = [
     "Token",
     "TokenData",
     "UnlockResults",
+    "PasskeyChallengeOut",
+    "PasskeyChallengeSave",
+    "PasskeyLoginRequest",
+    "PasskeyOptionsOut",
+    "PasskeyRegistrationOptionsRequest",
+    "UserPasskeyCreate",
+    "UserPasskeyInDB",
+    "UserPasskeyOut",
+    "UserPasskeySave",
     "ChangePassword",
     "CreateToken",
     "DeleteTokenResponse",

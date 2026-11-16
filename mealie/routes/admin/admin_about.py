@@ -37,6 +37,7 @@ class AdminAboutController(BaseAdminController):
             oidc_redirect=settings.OIDC_AUTO_REDIRECT,
             oidc_provider_name=settings.OIDC_PROVIDER_NAME,
             enable_reverse_proxy_auth=settings.REVERSE_PROXY_AUTH_READY,
+            enable_passkeys=settings.PASSKEYS_READY,
         )
 
     @router.get("/statistics", response_model=AppStatistics)
@@ -64,4 +65,7 @@ class AdminAboutController(BaseAdminController):
             oidc_disabled=not settings.OIDC_AUTH_ENABLED,
             reverse_proxy_auth_ready=settings.REVERSE_PROXY_AUTH_READY,
             reverse_proxy_auth_disabled=not settings.REVERSE_PROXY_AUTH_ENABLED,
+            passkeys_ready=settings.PASSKEYS_READY,
+            passkeys_disabled=not settings.PASSKEYS_ENABLED,
+            passkeys_status=settings.PASSKEYS_FEATURE.description,
         )

@@ -4,10 +4,14 @@ import type {
   DeleteTokenResponse,
   LongLiveTokenIn,
   LongLiveTokenOut,
+  PasskeyOptionsOut,
+  PasskeyRegistrationOptionsRequest,
   ResetPassword,
   UserBase,
   UserIn,
   UserOut,
+  UserPasskeyCreate,
+  UserPasskeyOut,
   UserRatingOut,
   UserRatingSummary,
 } from "~/lib/api/types/user";
@@ -41,6 +45,10 @@ const routes = {
 
   usersApiTokens: `${prefix}/users/api-tokens`,
   usersApiTokensTokenId: (token_id: string | number) => `${prefix}/users/api-tokens/${token_id}`,
+
+  passkeysSelf: `${prefix}/users/self/passkeys`,
+  passkeysSelfRegistrationOptions: `${prefix}/users/self/passkeys/registration-options`,
+  passkeysSelfId: (id: string) => `${prefix}/users/self/passkeys/${id}`,
 };
 
 export class UserApi extends BaseCRUDAPI<UserIn, UserOut, UserBase> {
@@ -85,6 +93,22 @@ export class UserApi extends BaseCRUDAPI<UserIn, UserOut, UserBase> {
 
   async deleteAPIToken(tokenId: number) {
     return await this.requests.delete<DeleteTokenResponse>(routes.usersApiTokensTokenId(tokenId));
+  }
+
+  async getPasskeys() {
+    return await this.requests.get<UserPasskeyOut[]>(routes.passkeysSelf);
+  }
+
+  async getPasskeyRegistrationOptions(payload: PasskeyRegistrationOptionsRequest) {
+    return await this.requests.post<PasskeyOptionsOut>(routes.passkeysSelfRegistrationOptions, payload);
+  }
+
+  async createPasskey(payload: UserPasskeyCreate) {
+    return await this.requests.post<UserPasskeyOut>(routes.passkeysSelf, payload);
+  }
+
+  async deletePasskey(id: string) {
+    return await this.requests.delete<UserPasskeyOut>(routes.passkeysSelfId(id));
   }
 
   userProfileImage(id: string) {

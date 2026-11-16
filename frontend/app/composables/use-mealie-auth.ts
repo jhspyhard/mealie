@@ -1,6 +1,7 @@
 import { ref, watch, computed } from "vue";
 import { useAuthBackend } from "~/composables/use-auth-backend";
-import type { UserOut } from "~/lib/api/types/user";
+import type { PasskeyOptionsOut, UserOut } from "~/lib/api/types/user";
+import { credentialToJSON, parseRequestOptions } from "~/lib/webauthn";
 
 export const useMealieAuth = function () {
   const auth = useAuthBackend();
@@ -54,6 +55,39 @@ export const useMealieAuth = function () {
     await auth.getSession();
   }
 
+  /**
+   * Signs in with a passkey. Resolves false when there was nothing to sign in with: the person closed the
+   * browser's prompt, or `signal` aborted it. Server rejections throw like `signIn` does.
+   *
+   * With `mediation: "conditional"` the browser waits for the person to pick a passkey from the username
+   * field's autofill list instead of opening a prompt, so the promise can stay pending for as long as the
+   * login page is open.
+   *
+   * Requests skip the interceptor's toasts; the login page reports failures itself, as it does for passwords.
+   */
+  async function passkeySignIn(options: { remember: boolean; mediation?: CredentialMediationRequirement; signal?: AbortSignal }) {
+    const { data } = await $axios.post<PasskeyOptionsOut>("/api/auth/passkey/options", null, { suppressAlert: true });
+
+    const credential = await navigator.credentials.get({
+      publicKey: parseRequestOptions(data.options),
+      mediation: options.mediation,
+      signal: options.signal,
+    }) as PublicKeyCredential | null;
+
+    if (!credential) {
+      return false;
+    }
+
+    const { data: token } = await $axios.post<{ access_token: string; token_type: "bearer" }>("/api/auth/passkey", {
+      challengeId: data.challengeId,
+      credential: credentialToJSON(credential),
+      rememberMe: options.remember,
+    }, { suppressAlert: true });
+    auth.setToken(token.access_token);
+    await auth.getSession();
+    return true;
+  }
+
   return {
     user,
     loggedIn,
@@ -63,5 +97,6 @@ export const useMealieAuth = function () {
     getSession: auth.getSession,
     oauthSignIn,
     reverseProxySignIn,
+    passkeySignIn,
   };
 };

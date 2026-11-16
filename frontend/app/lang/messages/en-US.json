@@ -957,6 +957,8 @@
     "please-enter-your-email-and-password": "Please enter your email and password",
     "invalid-credentials": "Invalid Credentials",
     "account-locked-please-try-again-later": "Account Locked. Please try again later",
+    "sign-in-with-a-passkey": "Sign in with a passkey",
+    "passkey-not-accepted": "That passkey wasn't accepted. It may have been removed from your account.",
     "user-favorites": "User Favorites",
     "password-strength-values": {
       "weak": "Weak",
@@ -1296,7 +1298,26 @@
     "manage-members": "Manage Members",
     "manage-webhooks": "Manage Webhooks",
     "manage-notifiers": "Manage Notifiers",
-    "manage-data-migrations": "Manage Data Migrations"
+    "manage-data-migrations": "Manage Data Migrations",
+    "passkeys": {
+      "passkeys": "Passkeys",
+      "description": "Sign in with your fingerprint, face, screen lock or password manager instead of typing your password. Your password keeps working too.",
+      "no-passkeys": "You haven't added any passkeys yet.",
+      "add-a-passkey": "Add a Passkey",
+      "add-a-passkey-description": "Give the passkey a name you'll recognize, and confirm your password. Your browser will then ask where to save it.",
+      "passkey-name": "Passkey Name",
+      "passkey-name-hint": "For example: My phone, Work laptop, Password manager",
+      "passkey-added": "Passkey added",
+      "passkey-removed": "Passkey removed",
+      "already-registered": "This device or password manager already has a passkey for your account.",
+      "remove-passkey": "Remove Passkey",
+      "remove-passkey-confirmation": "Remove the passkey \"{name}\"? You won't be able to sign in with it anymore. Also delete it from your device or password manager, or it will keep offering it.",
+      "synced": "Synced",
+      "last-used-on-date": "Last used: {0}",
+      "never-used": "Never used",
+      "disabled-on-this-server": "Passkeys are turned off on this server, so new ones can't be added. You can still remove the ones below.",
+      "browser-not-supported": "This browser can't create passkeys here. Passkeys need a recent browser and a secure (https) connection."
+    }
   },
   "cookbook": {
     "cookbooks": "Cookbooks",

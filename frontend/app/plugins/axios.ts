@@ -12,7 +12,7 @@ declare module "axios" {
 }
 
 /** Requests that must never trigger a refresh, or a failed login would retry itself forever. */
-const NO_REFRESH_PATHS = ["/api/auth/token", "/api/auth/refresh", "/api/auth/logout"];
+const NO_REFRESH_PATHS = ["/api/auth/token", "/api/auth/passkey", "/api/auth/refresh", "/api/auth/logout"];
 
 /** A failed read shows up as missing content, and some are expected to fail, so only writes get the generic notice. */
 const READ_METHODS = ["get", "head", "options"];

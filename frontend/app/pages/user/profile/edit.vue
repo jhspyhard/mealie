@@ -167,6 +167,7 @@
         </template>
       </ToggleState>
     </section>
+    <UserPasskeys />
     <section>
       <BaseCardSectionTitle
         class="mt-10"
@@ -227,6 +228,7 @@
 import { useUserApi } from "~/composables/api";
 import UserAvatar from "~/components/Domain/User/UserAvatar.vue";
 import UserPasswordStrength from "~/components/Domain/User/UserPasswordStrength.vue";
+import UserPasskeys from "~/components/Domain/User/UserPasskeys.vue";
 import { validators } from "~/composables/use-validators";
 import { useUserActivityPreferences } from "~/composables/use-users/preferences";
 import useDefaultActivity from "~/composables/use-default-activity";

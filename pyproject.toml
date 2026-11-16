@@ -47,6 +47,7 @@ dependencies = [
     "pint==0.26.2",
     "httpx-curl-cffi==0.1.5",
     "fpdf2==2.9.0",
+    "webauthn==3.0.1",
 ]
 
 [project.scripts]

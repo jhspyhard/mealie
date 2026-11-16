@@ -22,6 +22,7 @@ class AppInfo(MealieModel):
     oidc_redirect: bool
     oidc_provider_name: str
     enable_reverse_proxy_auth: bool
+    enable_passkeys: bool
     token_time: int
     allowed_iframe_hosts: list[str] = []
     branding_name: str = "Mealie"
@@ -77,5 +78,9 @@ class CheckAppConfig(MealieModel):
     oidc_disabled: bool
     reverse_proxy_auth_ready: bool
     reverse_proxy_auth_disabled: bool
+    passkeys_ready: bool
+    passkeys_disabled: bool
+    passkeys_status: str | None = None
+    """Why passkeys are off, when they are"""
     base_url_set: bool
     is_up_to_date: bool

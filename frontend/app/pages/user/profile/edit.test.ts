@@ -27,6 +27,7 @@ vi.mock("~/composables/use-default-activity", () => ({
 }));
 vi.mock("~/components/Domain/User/UserAvatar.vue", () => ({ default: { render: () => null } }));
 vi.mock("~/components/Domain/User/UserPasswordStrength.vue", () => ({ default: { render: () => null } }));
+vi.mock("~/components/Domain/User/UserPasskeys.vue", () => ({ default: { render: () => null } }));
 
 function mockUser(email: string) {
   return {
