@@ -1,8 +1,8 @@
 """add user passkeys
 
 Revision ID: 292b11ae2862
-Revises: f3a1ae61d772
-Create Date: 2026-11-12 03:56:01.504824
+Revises: 08880d089634
+Create Date: 2026-11-16 19:10:00.000000
 
 Adds WebAuthn passkeys. user_passkeys holds each user's registered credentials; passkey_challenges
 holds the short-lived challenges handed to the browser, so they can be checked and used up by
@@ -17,7 +17,7 @@ import mealie.db.migration_types
 
 # revision identifiers, used by Alembic.
 revision = "292b11ae2862"
-down_revision: str | None = "f3a1ae61d772"
+down_revision: str | None = "08880d089634"
 branch_labels: str | tuple[str, ...] | None = None
 depends_on: str | tuple[str, ...] | None = None
 
