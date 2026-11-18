@@ -14,10 +14,10 @@ from mealie.services.user_services.user_service import UserService
 
 
 class PasskeyProvider(AuthProvider[PasskeyLoginRequest]):
-    """Signs a user in with a passkey in place of their password.
+    """Signs a user in with a passkey in place of the password.
 
-    The lockout rules are the password's: a locked account stays locked, and a response that names a real passkey
-    but fails verification counts as a failed attempt.
+    The password lockout rules apply. A locked account stays locked. A response for a known passkey that fails
+    verification counts as a failed attempt.
     """
 
     _logger = root_logger.get_logger("passkey_provider")
@@ -41,7 +41,7 @@ class PasskeyProvider(AuthProvider[PasskeyLoginRequest]):
         if user is None:
             return None
 
-        # Passkeys replace a Mealie password, so they stop working if the account moves to LDAP or OIDC
+        # A passkey replaces a Mealie password, so it does not work for LDAP or OIDC accounts
         if user.auth_method != AuthMethod.MEALIE:
             self._logger.warning("Passkey belongs to a user whose auth method is not 'Mealie'; refusing sign-in")
             return None

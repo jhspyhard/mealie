@@ -81,6 +81,6 @@ class CheckAppConfig(MealieModel):
     passkeys_ready: bool
     passkeys_disabled: bool
     passkeys_status: str | None = None
-    """Why passkeys are off, when they are"""
+    """The reason that passkeys are off. None when passkeys are on."""
     base_url_set: bool
     is_up_to_date: bool

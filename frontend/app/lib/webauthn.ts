@@ -1,9 +1,9 @@
 /**
- * Glue between the server's WebAuthn options (JSON, binary fields as base64url) and the browser's
- * `navigator.credentials` API (ArrayBuffers).
+ * Converts between the WebAuthn options from the server (JSON, with binary fields as base64url) and the
+ * `navigator.credentials` API of the browser (ArrayBuffers).
  *
- * Browsers that have `PublicKeyCredential.parseCreationOptionsFromJSON()` and `credential.toJSON()` do this
- * themselves. Older ones (Safari before 18.4, for one) get the same conversion done by hand.
+ * Browsers with `PublicKeyCredential.parseCreationOptionsFromJSON()` and `credential.toJSON()` do this
+ * conversion. For older browsers (for example Safari before 18.4), this module does the conversion.
  */
 
 type JSONObject = Record<string, unknown>;
@@ -30,7 +30,7 @@ export function bufferToBase64Url(buffer: ArrayBuffer | ArrayBufferView): string
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** True when the browser can use passkeys at all. Needs a secure origin (https, or localhost). */
+/** True when the browser can use passkeys. Passkeys need a secure origin (https, or localhost). */
 export function passkeysSupported(): boolean {
   return typeof window !== "undefined"
     && window.isSecureContext
@@ -38,7 +38,7 @@ export function passkeysSupported(): boolean {
     && typeof navigator.credentials?.get === "function";
 }
 
-/** True when the browser can offer passkeys in the username field's autofill list. */
+/** True when the browser can show passkeys in the autofill list of the username field. */
 export async function conditionalMediationAvailable(): Promise<boolean> {
   if (!passkeysSupported()) {
     return false;
@@ -88,14 +88,14 @@ export function parseRequestOptions(options: JSONObject): PublicKeyCredentialReq
   } as unknown as PublicKeyCredentialRequestOptions;
 }
 
-/** The credential as the server expects it: the shape `PublicKeyCredential.toJSON()` produces. */
+/** The credential in the format of `PublicKeyCredential.toJSON()`. The server expects this format. */
 export function credentialToJSON(credential: PublicKeyCredential): JSONObject {
   if (typeof credential.toJSON === "function") {
     try {
       return credential.toJSON() as unknown as JSONObject;
     }
     catch {
-      // Some password-manager extensions wrap the credential and break toJSON(); fall through.
+      // Some password manager extensions wrap the credential, and toJSON() fails. Use the manual conversion.
     }
   }
 
@@ -127,8 +127,8 @@ export function credentialToJSON(credential: PublicKeyCredential): JSONObject {
 }
 
 /**
- * True for the errors a browser raises when the person backs out (closes the prompt, or it times out) or when
- * we abort a pending request ourselves. Neither is worth an error message.
+ * True for the errors that a browser raises when the user closes the prompt, when the prompt times out, or
+ * when the app stops the request. These errors do not need an error message.
  */
 export function isPasskeyCancellation(error: unknown): boolean {
   return error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "AbortError");

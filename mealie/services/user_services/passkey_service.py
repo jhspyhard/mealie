@@ -42,7 +42,7 @@ from mealie.schema.user.user import PrivateUser
 from mealie.services._base_service import BaseService
 
 CHALLENGE_LIFETIME = timedelta(minutes=5)
-"""How long the user has to finish with their authenticator. The browser is given the same timeout."""
+"""The time limit for the user to complete the step on the authenticator. The browser gets the same time limit."""
 
 KNOWN_TRANSPORTS = {transport.value for transport in AuthenticatorTransport}
 
@@ -53,14 +53,14 @@ class PasskeyPurpose(StrEnum):
 
 
 class PasskeyError(Exception):
-    """The browser's response couldn't be accepted. The message is for the logs, not the user."""
+    """The server rejects the response from the browser. The message is for the log, not for the user."""
 
 
 class PasskeyService(BaseService):
-    """WebAuthn ceremonies for adding passkeys and signing in with them.
+    """Runs the WebAuthn ceremonies that add a passkey and that sign a user in with a passkey.
 
-    Passkeys stand in for the password, so both ceremonies insist on user verification (a PIN, fingerprint or face
-    check on the authenticator). Without it a passkey would be a single factor: whoever holds the device.
+    A passkey replaces the password, so both ceremonies require user verification on the authenticator. User
+    verification is a PIN, a fingerprint or a face scan. Without it, a person who has the device can sign in.
     """
 
     def __init__(self, repos: AllRepositories) -> None:
@@ -93,7 +93,7 @@ class PasskeyService(BaseService):
         return saved.id, challenge
 
     def take_challenge(self, challenge_id: UUID4, purpose: PasskeyPurpose, user_id: UUID4 | None = None) -> bytes:
-        """Uses up a challenge, returning its bytes. It's gone afterwards whether or not the response checks out."""
+        """Deletes the challenge and returns its bytes. The challenge is single-use, also when the response fails."""
         challenge = self.repos.passkey_challenges.consume(challenge_id, purpose.value)
         if challenge is None:
             raise PasskeyError("Challenge is unknown, expired or already used")
@@ -103,7 +103,7 @@ class PasskeyService(BaseService):
         return base64url_to_bytes(challenge.challenge)
 
     # ================================================================
-    # Adding a passkey
+    # Passkey registration
 
     def registration_options(self, user: PrivateUser) -> PasskeyOptionsOut:
         existing = self.repos.user_passkeys.multi_query({"user_id": user.id})
@@ -112,7 +112,7 @@ class PasskeyService(BaseService):
         options = generate_registration_options(
             rp_id=self._rp_id,
             rp_name=self.settings.branding.name,
-            # The user handle is stored on the authenticator, so it must not be personal data. The id is random.
+            # The authenticator stores the user handle, so it must not contain personal data. The user id is random.
             user_id=user.id.bytes,
             user_name=user.email,
             user_display_name=user.full_name or user.email,
@@ -120,11 +120,11 @@ class PasskeyService(BaseService):
             timeout=int(CHALLENGE_LIFETIME.total_seconds() * 1000),
             attestation=AttestationConveyancePreference.NONE,
             authenticator_selection=AuthenticatorSelectionCriteria(
-                # Discoverable, so sign-in doesn't have to start with a username
+                # A discoverable credential lets the user sign in without a username
                 resident_key=ResidentKeyRequirement.REQUIRED,
                 user_verification=UserVerificationRequirement.REQUIRED,
             ),
-            # Stops the browser from registering an authenticator this user already has a passkey on
+            # Prevents a second passkey for this user on the same authenticator
             exclude_credentials=[self._descriptor(passkey) for passkey in existing],
         )
 
@@ -165,7 +165,7 @@ class PasskeyService(BaseService):
         return UserPasskeyOut.model_validate(saved)
 
     # ================================================================
-    # Signing in
+    # Passkey sign-in
 
     def authentication_options(self) -> PasskeyOptionsOut:
         challenge_id, challenge = self._issue_challenge(PasskeyPurpose.authentication)
@@ -174,8 +174,8 @@ class PasskeyService(BaseService):
             rp_id=self._rp_id,
             challenge=challenge,
             timeout=int(CHALLENGE_LIFETIME.total_seconds() * 1000),
-            # Left empty so the browser offers whichever of the user's passkeys it has for this site; nothing
-            # here reveals which accounts exist.
+            # With an empty list, the browser shows all passkeys that it has for this site.
+            # The options do not identify accounts.
             allow_credentials=[],
             user_verification=UserVerificationRequirement.REQUIRED,
         )
@@ -183,7 +183,7 @@ class PasskeyService(BaseService):
         return PasskeyOptionsOut(challenge_id=challenge_id, options=options_to_json_dict(options))
 
     def find_passkey(self, credential: dict[str, Any]) -> tuple[AuthenticationCredential, UserPasskeyInDB]:
-        """Finds the stored passkey a sign-in response claims to come from, before its signature is checked."""
+        """Finds the stored passkey that the sign-in response identifies. It does not verify the signature."""
         try:
             parsed = parse_authentication_credential_json(credential)
         except (WebAuthnException, ValueError, TypeError, KeyError) as e:
@@ -194,8 +194,8 @@ class PasskeyService(BaseService):
         if passkey is None:
             raise PasskeyError("Unknown passkey")
 
-        # With no allowCredentials list the authenticator must say whose passkey it is, and it has to agree with
-        # the owner on record (WebAuthn §7.2 step 6).
+        # Without an allowCredentials list, the authenticator identifies the owner of the passkey.
+        # That owner must match the stored owner (WebAuthn §7.2 step 6).
         if parsed.response.user_handle != passkey.user_id.bytes:
             raise PasskeyError("Passkey's user handle doesn't match its owner")
 
@@ -238,7 +238,7 @@ class PasskeyService(BaseService):
 
     @staticmethod
     def _transports_from(credential: dict[str, Any]) -> str | None:
-        """The transports the browser reported, which come back as hints in exclude lists."""
+        """Returns the transports that the browser reported. Exclude lists send them to the browser as hints."""
         response = credential.get("response")
         reported = response.get("transports") if isinstance(response, dict) else None
         if not isinstance(reported, list):

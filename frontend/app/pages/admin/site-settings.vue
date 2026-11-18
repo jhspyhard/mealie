@@ -451,7 +451,7 @@ function passkeysCheck(): SimpleCheck {
     disabled: appConfig.value.passkeysDisabled,
   });
 
-  // Turned on but not usable: the server knows which BASE_URL rule is failing, which beats the generic text
+  // Passkeys are on but not ready. Show the server message, because it identifies the BASE_URL problem.
   if (!appConfig.value.passkeysDisabled && !appConfig.value.passkeysReady && appConfig.value.passkeysStatus) {
     check.errorText = appConfig.value.passkeysStatus;
   }

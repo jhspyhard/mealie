@@ -10,12 +10,12 @@ PasskeyName = Annotated[str, StringConstraints(strip_whitespace=True, min_length
 
 
 class UserPasskeyOut(MealieOutModel):
-    """A passkey as its owner sees it in their account settings."""
+    """A passkey, as its owner sees it in the account settings."""
 
     id: UUID4
     name: str
     backed_up: bool = False
-    """Synced across the user's devices by their password manager, rather than stored on one device."""
+    """True when a password manager syncs the passkey across the devices of the user."""
     created_at: datetime | None = None
     last_used_at: datetime | None = None
 
@@ -23,7 +23,7 @@ class UserPasskeyOut(MealieOutModel):
 
 
 class UserPasskeyInDB(UserPasskeyOut):
-    """Everything stored for a passkey. Only for the server's own use, never returned by the API."""
+    """All stored data for a passkey. Only the server uses this schema. The API does not return it."""
 
     user_id: UUID4
     credential_id: str
@@ -60,19 +60,19 @@ class PasskeyChallengeOut(PasskeyChallengeSave):
 
 
 class PasskeyRegistrationOptionsRequest(MealieModel):
-    """Starts adding a passkey. The password is asked for again so a session left open on someone else's
-    screen can't be used to add a passkey that outlives it."""
+    """Starts a passkey registration. The user must give the password again. Thus a person who finds an open
+    session on a different screen cannot add a passkey."""
 
     current_password: str
 
 
 class PasskeyOptionsOut(MealieOutModel):
-    """What the browser needs to create or use a passkey."""
+    """The data that the browser needs to create or use a passkey."""
 
     challenge_id: UUID4
-    """Send this back with the browser's response."""
+    """Send this value back with the response from the browser."""
     options: dict[str, Any]
-    """WebAuthn `publicKey` options in their JSON form, for `PublicKeyCredential.parseCreationOptionsFromJSON()`
+    """The WebAuthn `publicKey` options as JSON, for `PublicKeyCredential.parseCreationOptionsFromJSON()`
     or `parseRequestOptionsFromJSON()`."""
 
 

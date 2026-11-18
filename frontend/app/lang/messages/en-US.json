@@ -959,7 +959,7 @@
     "please-enter-your-email-and-password": "Please enter your email and password",
     "invalid-credentials": "Invalid Credentials",
     "account-locked-please-try-again-later": "Account Locked. Please try again later",
-    "sign-in-with-a-passkey": "Sign in with a passkey",
+    "login-with-passkey": "Login with Passkey",
     "passkey-not-accepted": "That passkey wasn't accepted. It may have been removed from your account.",
     "user-favorites": "User Favorites",
     "password-strength-values": {

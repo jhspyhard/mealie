@@ -12,7 +12,7 @@ function bytes(buffer: ArrayBuffer | BufferSource | undefined): number[] {
   return Array.from(new Uint8Array(buffer as ArrayBuffer));
 }
 
-/** A browser without the JSON helpers, so the hand-rolled conversion runs */
+/** Removes the JSON helpers from the browser, so the tests use the manual conversion */
 function stubOldBrowser() {
   vi.stubGlobal("PublicKeyCredential", {});
 }

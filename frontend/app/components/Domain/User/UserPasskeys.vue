@@ -159,18 +159,18 @@ const { passwordIcon, inputType, togglePasswordShow } = usePasswordField();
 const passkeys = ref<UserPasskeyOut[]>([]);
 const loading = ref(true);
 
-// Checked once mounted: the server render can't see the browser's WebAuthn support
+// The component sets this after mount, because the server render cannot detect WebAuthn support in the browser
 const browserSupported = ref(true);
 
 const isMealieUser = computed(() => auth.user.value?.authMethod === "Mealie");
 
 /**
- * Shown to Mealie-password users while passkeys are on. With them switched off it only stays while the user still
- * has passkeys, so they can clear out ones that no longer sign them in.
+ * Mealie-password users see this card when passkeys are on. When passkeys are off, the card shows only if the
+ * user has passkeys. Thus the user can remove passkeys that do not work.
  */
 const visible = computed(() => isMealieUser.value && ($appInfo.enablePasskeys || passkeys.value.length > 0));
 
-/** Why passkeys can't be added, if they can't. Existing ones can always be removed. */
+/** The reason that the user cannot add a passkey, or null. The user can always remove passkeys. */
 const unavailableReason = computed(() => {
   if (!$appInfo.enablePasskeys) {
     return i18n.t("profile.passkeys.disabled-on-this-server");
@@ -196,7 +196,7 @@ onMounted(() => {
 });
 
 // ================================================================
-// Adding
+// Passkey registration
 
 const addDialog = ref(false);
 const adding = ref(false);
@@ -215,7 +215,7 @@ async function addPasskey() {
   adding.value = true;
 
   try {
-    // A wrong password comes back as an error the request layer already shows
+    // For a wrong password, the request layer shows the error
     const { data: options } = await api.users.getPasskeyRegistrationOptions({ currentPassword: addForm.password });
     if (!options) {
       return;
@@ -228,7 +228,7 @@ async function addPasskey() {
       }) as PublicKeyCredential | null;
     }
     catch (error) {
-      // InvalidStateError: this authenticator already holds one of the account's passkeys (the exclude list)
+      // InvalidStateError: this authenticator has a passkey for this account (from the exclude list)
       if (error instanceof DOMException && error.name === "InvalidStateError") {
         alert.error(i18n.t("profile.passkeys.already-registered"));
       }
@@ -261,7 +261,7 @@ async function addPasskey() {
 }
 
 // ================================================================
-// Removing
+// Passkey removal
 
 const deleteDialog = ref(false);
 const deleteTarget = ref<UserPasskeyOut | null>(null);

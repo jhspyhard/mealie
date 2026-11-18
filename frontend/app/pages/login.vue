@@ -130,7 +130,7 @@
                   :prepend-icon="$globals.icons.passkey"
                   @click="passkeyAuthenticate"
                 >
-                  {{ $t("user.sign-in-with-a-passkey") }}
+                  {{ $t("user.login-with-passkey") }}
                 </v-btn>
               </div>
             </v-card-actions>
@@ -364,11 +364,11 @@ onBeforeMount(async () => {
 
 const passkeyLoggingIn = ref(false);
 const showPasskeyButton = ref(false);
-/** The username field offers passkeys in its autofill list */
+/** True when the autofill list of the username field shows passkeys */
 const passkeyAutofill = ref(false);
 let autofillRequest: AbortController | null = null;
 
-/** Below this, a conditional request that ends on its own was refused outright rather than timing out */
+/** A conditional request that ends before this time is a refusal from the browser, not a timeout */
 const AUTOFILL_MIN_LIFETIME_MS = 1000;
 
 onMounted(async () => {
@@ -377,7 +377,7 @@ onMounted(async () => {
   }
   showPasskeyButton.value = true;
 
-  // Autofill needs the username field, which is hidden when password login is off
+  // Autofill needs the username field. The page hides that field when password login is off.
   if ($appInfo.allowPasswordLogin && await conditionalMediationAvailable()) {
     passkeyAutofill.value = true;
     startPasskeyAutofill();
@@ -392,8 +392,8 @@ function stopPasskeyAutofill() {
 }
 
 /**
- * Leaves a passkey request pending behind the username field, so picking a passkey from its autofill list signs
- * straight in. It's abandoned when the page is left or the passkey button opens the browser's own prompt.
+ * Starts a passkey request for the autofill list of the username field. When the user selects a passkey in the
+ * list, the user signs in. The request stops when the user leaves the page or clicks the passkey button.
  */
 async function startPasskeyAutofill() {
   if (!passkeyAutofill.value || loggedIn.value) {
@@ -414,8 +414,8 @@ async function startPasskeyAutofill() {
     }
 
     if (isPasskeyCancellation(error)) {
-      // The request timed out with the page still open, so start another. One refused straight away would just
-      // be refused again, so give up on autofill instead of spinning; the button still works.
+      // After a timeout, start a new request. After an immediate refusal, stop autofill, because the browser
+      // refuses each new request too. The passkey button continues to work.
       if (Date.now() - startedAt < AUTOFILL_MIN_LIFETIME_MS) {
         passkeyAutofill.value = false;
         return;
@@ -451,7 +451,7 @@ async function passkeyAuthenticate() {
 function alertOnPasskeyError(error: any) {
   console.log(error);
   if (error?.response?.status === 401) {
-    // Usually a passkey the browser still holds after it was removed from the account
+    // For example, the browser has a passkey that the user removed from the account
     alert.error(i18n.t("user.passkey-not-accepted"));
   }
   else {

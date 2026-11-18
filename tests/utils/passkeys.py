@@ -1,8 +1,8 @@
-"""A software WebAuthn authenticator, so tests can add and use passkeys without a browser.
+"""A software WebAuthn authenticator. Tests use it to add and use passkeys without a browser.
 
-It produces the same JSON a browser's `PublicKeyCredential.toJSON()` does, signed with a real P-256 key, so the
-server's verification runs for real. Its knobs exist to produce the faulty responses an attacker or a broken
-authenticator might send.
+It makes the same JSON as `PublicKeyCredential.toJSON()` in a browser, and signs it with a real P-256 key.
+Thus the tests run the full verification on the server. Its options make the bad responses that an attacker
+or a defective authenticator can send.
 """
 
 import hashlib
@@ -33,7 +33,7 @@ class SoftAuthenticator:
     credential_id: bytes = field(default_factory=lambda: secrets.token_bytes(32))
     sign_count: int = 0
     user_handle: bytes | None = None
-    """Set when the passkey is created, from the options' `user.id`."""
+    """The `user.id` from the registration options. The authenticator sets it when it creates the passkey."""
 
     def __post_init__(self) -> None:
         self._key = ec.generate_private_key(ec.SECP256R1())
@@ -58,14 +58,14 @@ class SoftAuthenticator:
         return cbor2.dumps({1: 2, 3: -7, -1: 1, -2: numbers.x.to_bytes(32, "big"), -3: numbers.y.to_bytes(32, "big")})
 
     def create(self, options: dict[str, Any], *, origin: str | None = None) -> dict[str, Any]:
-        """Answers registration options like `navigator.credentials.create()` would."""
+        """Returns the response that `navigator.credentials.create()` gives for the registration options."""
         self.user_handle = base64url_to_bytes(options["user"]["id"])
 
         auth_data = (
             hashlib.sha256(self.rp_id.encode()).digest()
             + bytes([self._flags(attested=True)])
             + struct.pack(">I", self.sign_count)
-            + bytes(16)  # aaguid: an authenticator that won't say what it is
+            + bytes(16)  # aaguid: all zeros, an authenticator that does not give its model
             + struct.pack(">H", len(self.credential_id))
             + self.credential_id
             + self._cose_public_key()
@@ -95,7 +95,7 @@ class SoftAuthenticator:
         user_handle: bytes | None = None,
         tamper_signature: bool = False,
     ) -> dict[str, Any]:
-        """Answers authentication options like `navigator.credentials.get()` would."""
+        """Returns the response that `navigator.credentials.get()` gives for the authentication options."""
         if self.sign_count:
             self.sign_count += 1
 

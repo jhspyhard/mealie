@@ -20,7 +20,7 @@ ORIGIN = f"https://{RP_ID}"
 
 @pytest.fixture(autouse=True)
 def reset_settings_cache():
-    """monkeypatch restores the env vars, but the cached settings object would keep the patched values."""
+    """monkeypatch restores the env vars. This fixture clears the cached settings, which keep the patched values."""
     yield
     get_app_settings.cache_clear()
 
@@ -109,7 +109,7 @@ def test_about_reports_passkeys(api_client: TestClient, passkeys_enabled):
 
 
 # ================================================================
-# Adding passkeys
+# Passkey registration
 
 
 def test_registration_options(api_client: TestClient, passkeys_enabled, unique_user_fn_scoped: TestUser):
@@ -141,14 +141,14 @@ def test_add_list_and_delete_passkey(
     assert created["name"] == "Work laptop"
     assert created["backedUp"] is True
     assert created["lastUsedAt"] is None
-    # Nothing the browser doesn't need leaves the server
+    # The server sends only the data that the browser needs
     assert "publicKey" not in created
     assert "credentialId" not in created
 
     listed = api_client.get(api_routes.users_self_passkeys, headers=user.token).json()
     assert [p["id"] for p in listed] == [created["id"]]
 
-    # The authenticator that already has a passkey is excluded from the next registration
+    # The next registration excludes the authenticator that has a passkey
     options = registration_options(api_client, user)["options"]
     assert [c["id"] for c in options["excludeCredentials"]] == [authenticator.create(options)["id"]]
 
@@ -230,7 +230,7 @@ def test_bad_registration_is_rejected(
     elif fault == "garbage":
         credential = {"id": "nope", "response": {"clientDataJSON": "!!"}}
     else:
-        # a sign-in challenge can't be redeemed to add a passkey
+        # A sign-in challenge is not valid for a passkey registration
         login = login_options(api_client)
         challenge_id = login["challengeId"]
         credential = authenticator.create({**started["options"], "challenge": login["options"]["challenge"]})
@@ -278,7 +278,7 @@ def test_only_mealie_password_users_can_add_passkeys(
 
 
 # ================================================================
-# Signing in
+# Passkey sign-in
 
 
 def test_login_options_need_no_username(api_client: TestClient, passkeys_enabled):
@@ -378,8 +378,8 @@ def test_sign_in_from_another_origin(
 def test_sign_in_needs_user_verification(
     api_client: TestClient, passkeys_enabled, unique_user_fn_scoped: TestUser, authenticator: SoftAuthenticator
 ):
-    """A passkey replaces the password, so holding the device isn't enough; the authenticator must check a PIN
-    or biometric too."""
+    """A passkey replaces the password, so the device alone is not sufficient. The authenticator must also
+    verify a PIN or biometric."""
     add_passkey(api_client, unique_user_fn_scoped, authenticator)
     authenticator.user_verification = False
 
@@ -399,12 +399,12 @@ def test_bad_signatures_lock_the_account(
             credential = authenticator.get(started["options"], tamper_signature=True)
             assert passkey_login(api_client, started["challengeId"], credential).status_code == 401
 
-        # Locked out now, even with a good response
+        # The account is locked, so a valid response also fails
         started = login_options(api_client)
         response = passkey_login(api_client, started["challengeId"], authenticator.get(started["options"]))
         assert response.status_code == 423
     finally:
-        # Other tests count locked users, so don't leave this one behind
+        # Other tests count the locked users, so unlock this user
         locked = user.repos.users.get_one(user.user_id)
         assert locked
         UserService(user.repos).unlock_user(locked)
@@ -413,7 +413,7 @@ def test_bad_signatures_lock_the_account(
 def test_sign_count_must_increase(
     api_client: TestClient, passkeys_enabled, unique_user_fn_scoped: TestUser, authenticator: SoftAuthenticator
 ):
-    """A hardware key that keeps a counter and reports a lower one has probably been cloned."""
+    """A hardware key that sends a lower counter can be a copy, so the server rejects it."""
     authenticator.sign_count = 5
     add_passkey(api_client, unique_user_fn_scoped, authenticator)
 

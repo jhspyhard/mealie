@@ -20,10 +20,10 @@ router = UserAPIRouter(prefix="/users/self/passkeys", tags=["Users: Passkeys"])
 
 @controller(router)
 class UserPasskeysController(BaseUserController):
-    """The signed-in user's own passkeys.
+    """The passkeys of the signed-in user.
 
-    Listing and removing keep working when passkeys are switched off, so people can still clean up keys that
-    no longer sign them in. Adding needs passkeys to be on.
+    Users can list and remove passkeys when passkeys are off, so they can remove passkeys that do not work.
+    To add a passkey, passkeys must be on.
     """
 
     @property
@@ -75,7 +75,8 @@ class UserPasskeysController(BaseUserController):
     def delete_passkey(self, passkey_id: UUID4):
         passkey = self.repos.user_passkeys.get_one(passkey_id)
 
-        # Someone else's passkey gets the same answer as a missing one, so ids can't be probed
+        # The response for the passkey of a different user is the same as for a missing passkey.
+        # Thus a user cannot find which passkey ids exist.
         if passkey is None or passkey.user_id != self.user.id:
             raise not_found()
 

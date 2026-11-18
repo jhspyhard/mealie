@@ -4,9 +4,9 @@ Revision ID: 292b11ae2862
 Revises: 08880d089634
 Create Date: 2026-11-16 19:10:00.000000
 
-Adds WebAuthn passkeys. user_passkeys holds each user's registered credentials; passkey_challenges
-holds the short-lived challenges handed to the browser, so they can be checked and used up by
-whichever worker receives the response.
+Adds tables for WebAuthn passkeys. user_passkeys contains the registered credentials of each user.
+passkey_challenges contains the challenges that the server sends to the browser. Each challenge
+is in the database, so each worker can verify the response and delete the challenge.
 
 """
 

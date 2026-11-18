@@ -56,14 +56,14 @@ export const useMealieAuth = function () {
   }
 
   /**
-   * Signs in with a passkey. Resolves false when there was nothing to sign in with: the person closed the
-   * browser's prompt, or `signal` aborted it. Server rejections throw like `signIn` does.
+   * Signs in with a passkey. Resolves false when the user closes the browser prompt or `signal` stops the
+   * request. When the server rejects the passkey, the function throws an error, the same as `signIn`.
    *
-   * With `mediation: "conditional"` the browser waits for the person to pick a passkey from the username
-   * field's autofill list instead of opening a prompt, so the promise can stay pending for as long as the
-   * login page is open.
+   * With `mediation: "conditional"`, the browser does not open a prompt. The browser waits until the user
+   * selects a passkey in the autofill list of the username field. Thus the promise can stay pending while
+   * the login page is open.
    *
-   * Requests skip the interceptor's toasts; the login page reports failures itself, as it does for passwords.
+   * The requests do not show interceptor toasts. The login page shows the errors, the same as for passwords.
    */
   async function passkeySignIn(options: { remember: boolean; mediation?: CredentialMediationRequirement; signal?: AbortSignal }) {
     const { data } = await $axios.post<PasskeyOptionsOut>("/api/auth/passkey/options", null, { suppressAlert: true });

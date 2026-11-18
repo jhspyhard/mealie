@@ -179,7 +179,10 @@ def set_session_cookie(response: Response, request: Request, token: str, expires
 
 
 def client_ip(request: Request) -> str:
-    """The client's address for logging failed sign-ins. Taken from headers the client controls, so only for logs."""
+    """The client address for the log entries of failed sign-ins.
+
+    The client controls these headers, so use the value only in logs.
+    """
     if "x-forwarded-for" in request.headers:
         ip = request.headers["x-forwarded-for"]
         if "," in ip:  # if there are multiple IPs, the first one is canonically the true client
@@ -288,9 +291,9 @@ def get_token(
 
 @public_router.post("/passkey/options", response_model=PasskeyOptionsOut)
 def passkey_login_options(session: Session = Depends(generate_session)):
-    """Starts a passkey sign-in. Hand `options` to `navigator.credentials.get()`.
+    """Starts a passkey sign-in. Give `options` to `navigator.credentials.get()`.
 
-    No username is needed: the browser offers whichever of the user's passkeys it holds for this site.
+    The request does not need a username. The browser shows the passkeys that it has for this site.
     """
     if not get_app_settings().PASSKEYS_READY:
         raise not_found()
@@ -305,7 +308,7 @@ def passkey_login(
     data: PasskeyLoginRequest,
     session: Session = Depends(generate_session),
 ):
-    """Finishes a passkey sign-in with the browser's response, returning a session token like `/token` does."""
+    """Completes a passkey sign-in with the response from the browser. Returns a session token, the same as `/token`."""
     if not get_app_settings().PASSKEYS_READY:
         raise not_found()
 

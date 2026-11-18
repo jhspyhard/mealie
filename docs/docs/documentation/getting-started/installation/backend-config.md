@@ -141,21 +141,23 @@ Mealie can trust a username forwarded by a reverse proxy that has already authen
 
 ### Passkeys
 
-Passkeys let people sign in with their phone, computer or security key (unlocked with a fingerprint, face or PIN) instead of typing their password. Once enabled, users add passkeys from their profile, and the login page offers them without asking for a username first. Passkeys are only for accounts that sign in with a Mealie password; LDAP and OIDC users keep signing in the way they do now. Users who sign in with OIDC can usually set up a passkey with their identity provider instead.
+Passkeys let users sign in with a phone, a computer or a security key in place of a password. The user unlocks the passkey with a fingerprint, a face scan or a PIN. When passkeys are on, users add passkeys on their profile page. The login page shows the passkeys and does not ask for a username first.
 
-Browsers only allow passkeys on secure sites, so they need more than the setting below:
+Passkeys are only for accounts that use a Mealie password. LDAP and OIDC users sign in as before. Many identity providers support passkeys, so OIDC users can add a passkey there.
 
-- `BASE_URL` must be the `https://` address people use to reach Mealie. `http://localhost` also works, for development.
-- `BASE_URL` must use a domain name, such as `https://mealie.example.com`. Passkeys can't be tied to an IP address, even over HTTPS.
+Browsers allow passkeys only on secure sites. Thus passkeys also need these conditions:
 
-If either is missing, Mealie leaves passkeys off and says why in the startup log and in the admin's configuration checks.
+- `BASE_URL` must be the `https://` address of Mealie. For development, `http://localhost` is also valid.
+- `BASE_URL` must use a domain name, such as `https://mealie.example.com`. Passkeys do not work with an IP address, even with HTTPS.
 
-!!! warning "Passkeys are tied to `BASE_URL`'s hostname"
-    Each passkey only works for the hostname it was created on. If you later change `BASE_URL` to a different hostname, existing passkeys stop working. People can still sign in with their password and add new passkeys. The port and path don't matter.
+If a condition is not true, Mealie keeps passkeys off. The startup log and the configuration checks on the admin page show the reason.
+
+!!! warning "Passkeys work only for the hostname of `BASE_URL`"
+    A passkey works only for the hostname where the user created it. If you change `BASE_URL` to a different hostname, all passkeys stop working. Users can sign in with their password and add new passkeys. A change to the port or the path has no effect on passkeys.
 
 | Variables        | Default | Description                                                                                   |
 | ---------------- | :-----: | --------------------------------------------------------------------------------------------- |
-| PASSKEYS_ENABLED |  False  | Lets users with a Mealie password add passkeys and sign in with them. Requires an https `BASE_URL` with a domain name |
+| PASSKEYS_ENABLED |  False  | Lets users with a Mealie password add passkeys and sign in with them. Needs an https `BASE_URL` with a domain name |
 
 ### OpenID Connect (OIDC)
 

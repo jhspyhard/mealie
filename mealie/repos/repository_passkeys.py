@@ -11,7 +11,7 @@ from .repository_generic import RepositoryGeneric
 
 class RepositoryPasskeyChallenges(RepositoryGeneric[PasskeyChallengeOut, PasskeyChallenge]):
     def delete_expired(self) -> None:
-        """Clears challenges nobody answered, which would otherwise pile up from abandoned sign-ins."""
+        """Deletes expired challenges. A sign-in that a user stops before the end leaves its challenge in the table."""
         try:
             self.session.execute(delete(PasskeyChallenge).where(PasskeyChallenge.expires_at <= datetime.now(UTC)))
             self.session.commit()
@@ -20,10 +20,12 @@ class RepositoryPasskeyChallenges(RepositoryGeneric[PasskeyChallengeOut, Passkey
             raise
 
     def consume(self, challenge_id: UUID4, purpose: str) -> PasskeyChallengeOut | None:
-        """Deletes the challenge and returns it, or returns None if it's unknown, expired or for another purpose.
+        """Deletes the challenge and returns it.
 
-        Taking it out in a single DELETE ... RETURNING means two requests racing with the same response can't
-        both get it, whichever worker serves them.
+        Returns None if the challenge is unknown, expired or for a different purpose.
+
+        One DELETE ... RETURNING statement reads and deletes the challenge. Thus, when two requests send the same
+        response at the same time, only one request gets the challenge.
         """
         stmt = (
             delete(PasskeyChallenge)

@@ -535,20 +535,20 @@ class AppSettings(AppLoggingSettings):
     # Passkey (WebAuthn) Configuration
 
     PASSKEYS_ENABLED: bool = False
-    """Let users with a Mealie password add passkeys and sign in with them. Browsers only offer passkeys on a
-    secure origin, so this also needs BASE_URL set to an https:// address with a domain name (http://localhost
-    is allowed for development). Off by default because a stock install serves plain HTTP."""
+    """Lets users with a Mealie password add passkeys and sign in with them. Browsers allow passkeys only on a
+    secure origin. Thus BASE_URL must be an https:// address with a domain name. For development, http://localhost
+    is also valid. The default is off, because a default installation uses HTTP."""
 
     @property
     def PASSKEYS_RP_ID(self) -> str:
-        """The relying party ID passkeys are bound to: BASE_URL's hostname. Passkeys made for one RP ID never
-        work for another, so changing BASE_URL's hostname strands every registered passkey."""
+        """The relying party ID of all passkeys: the hostname of BASE_URL. A passkey works only for its own RP ID.
+        If the hostname of BASE_URL changes, all registered passkeys stop working."""
         return (urlparse(self.BASE_URL).hostname or "").lower()
 
     @property
     def PASSKEYS_ORIGIN(self) -> str:
-        """BASE_URL reduced to the origin a browser reports during a WebAuthn ceremony: scheme, lowercase host,
-        and the port only when it isn't the scheme's default."""
+        """The origin that a browser reports in a WebAuthn ceremony, from BASE_URL. The origin has the scheme,
+        the lowercase host, and the port. It has the port only when the port is not the default for the scheme."""
         parsed = urlparse(self.BASE_URL)
         scheme = parsed.scheme.lower()
         host = self.PASSKEYS_RP_ID
@@ -592,7 +592,7 @@ class AppSettings(AppLoggingSettings):
 
     @property
     def PASSKEYS_READY(self) -> bool:
-        """Passkeys are enabled and BASE_URL is an origin browsers will allow them on"""
+        """True when passkeys are enabled and browsers allow passkeys on the BASE_URL origin"""
         return self.PASSKEYS_FEATURE.enabled
 
     # ===============================================

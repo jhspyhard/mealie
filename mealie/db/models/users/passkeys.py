@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class UserPasskey(SqlAlchemyBase, BaseMixins):
-    """A WebAuthn credential a user registered to sign in with instead of their password."""
+    """A WebAuthn credential that a user registered. The user signs in with it in place of the password."""
 
     __tablename__ = "user_passkeys"
 
@@ -26,27 +26,28 @@ class UserPasskey(SqlAlchemyBase, BaseMixins):
     household_id: AssociationProxy[GUID] = association_proxy("user", "household_id")
 
     name: Mapped[str] = mapped_column(String(64), nullable=False)
-    """What the user called it, e.g. "Work laptop"."""
 
     credential_id: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
-    """base64url credential ID. The authenticator sends it back on every sign-in, which is how we find the key."""
+    """The base64url credential ID. The authenticator sends it at each sign-in.
+    The server uses it to find the passkey."""
 
     public_key: Mapped[str] = mapped_column(String, nullable=False)
-    """base64url COSE public key. Not secret, but only the server needs it."""
+    """The base64url COSE public key."""
 
     sign_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    """The authenticator's signature counter. Synced passkeys always report 0, so a counter that goes backwards
-    only means something for hardware keys that keep one."""
+    """The signature counter of the authenticator. Synced passkeys always send 0. Only hardware keys
+    increase the counter, so a lower counter is a problem only for hardware keys."""
 
     transports: Mapped[str | None] = mapped_column(String, default=None)
-    """Comma-separated transports the authenticator reported (internal, hybrid, usb, ...), as hints for the browser."""
+    """The transports that the authenticator reported (internal, hybrid, usb, ...), separated by commas.
+    The browser uses them as hints."""
 
     aaguid: Mapped[str | None] = mapped_column(String(36), default=None)
-    """Identifies the authenticator model (or all zeros when it won't say)."""
+    """Identifies the authenticator model. It is all zeros when the authenticator does not give its model."""
 
     backup_eligible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     backed_up: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    """Whether the passkey is synced (e.g. iCloud Keychain, Google Password Manager) rather than device-bound."""
+    """True when a password manager syncs the passkey (for example iCloud Keychain). False when one device keeps it."""
 
     last_used_at: Mapped[datetime | None] = mapped_column(NaiveDateTime, default=None)
 
@@ -77,24 +78,24 @@ class UserPasskey(SqlAlchemyBase, BaseMixins):
 
 
 class PasskeyChallenge(SqlAlchemyBase, BaseMixins):
-    """A WebAuthn challenge waiting for the browser's response.
+    """A WebAuthn challenge for one response from the browser.
 
-    Kept in the database rather than in memory so it works with more than one worker, and deleted as it is used
-    so a captured response can't be replayed.
+    The database keeps the challenge, so all workers can find it. The server deletes the challenge when it reads it.
+    Thus an attacker cannot send a copied response again.
     """
 
     __tablename__ = "passkey_challenges"
 
     id: Mapped[GUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
     challenge: Mapped[str] = mapped_column(String, nullable=False)
-    """base64url random bytes the authenticator must sign."""
+    """Random bytes in base64url. The authenticator signs them."""
 
     purpose: Mapped[str] = mapped_column(String(16), nullable=False)
-    """"registration" or "authentication", so one kind can't be redeemed as the other."""
+    """"registration" or "authentication". A challenge for one purpose is not valid for the other purpose."""
 
     user_id: Mapped[GUID | None] = mapped_column(GUID, default=None)
-    """The user adding a passkey; empty for sign-in, where we don't know who it is until the response arrives.
-    Deliberately not a foreign key: the row expires within minutes and shouldn't block deleting a user."""
+    """The user who adds a passkey. Empty for sign-in, because the server identifies the user from the response.
+    This column is not a foreign key. The row expires after some minutes, so it must not prevent a user deletion."""
 
     expires_at: Mapped[datetime] = mapped_column(NaiveDateTime, nullable=False, index=True)
 
